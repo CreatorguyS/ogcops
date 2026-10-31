@@ -21,6 +21,17 @@ async function layout(price: string) {
   return { priceNode, period, innerRight: card.left + card.width - 40 };
 }
 
+function textContent(node: unknown): string[] {
+  if (typeof node === 'string') return [node];
+  if (Array.isArray(node)) return node.flatMap(textContent);
+  if (node && typeof node === 'object' && 'props' in node)
+    return textContent((node as { props: { children: unknown } }).props.children);
+  return [];
+}
+
+const render = (overrides: Record<string, unknown> = {}) =>
+  pricingHighlight.render({ ...pricingHighlight.defaults, ...overrides });
+
 describe('saas-pricing-highlight', () => {
   it('keeps the default price at 56px', async () => {
     expect((await layout('$29')).priceNode.props.style.fontSize).toBe('56px');
@@ -31,5 +42,28 @@ describe('saas-pricing-highlight', () => {
     expect(parseInt(priceNode.props.style.fontSize)).toBeLessThan(56);
     expect(period.left).toBeGreaterThanOrEqual(priceNode.left + priceNode.width);
     expect(period.left + period.width).toBeLessThanOrEqual(innerRight);
+  });
+
+  it('renders all four default features', () => {
+    const text = textContent(render()).join(' ');
+    expect(text).toContain('Unlimited projects');
+    expect(text).toContain('Priority support');
+    expect(text).toContain('Advanced analytics');
+    expect(text).toContain('Custom integrations');
+  });
+
+  it('hides cleared features instead of falling back to default text', () => {
+    const text = textContent(
+      render({
+        feature1: '5 projects',
+        feature2: 'Email support',
+        feature3: '',
+        feature4: '',
+      }),
+    ).join(' ');
+    expect(text).toContain('5 projects');
+    expect(text).toContain('Email support');
+    expect(text).not.toContain('Advanced analytics');
+    expect(text).not.toContain('Custom integrations');
   });
 });
