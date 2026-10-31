@@ -27,7 +27,11 @@ export function CustomizePanel({ fields, params, onParamChange, onReset, categor
   }
 
   const groupOrder = ['Content', 'Style', 'Brand'];
-  const sortedGroups = groupOrder.filter((g) => groups[g]).map((g) => [g, groups[g]] as const);
+  const knownGroups = groupOrder.filter((g) => groups[g]).map((g) => [g, groups[g]] as const);
+  const otherGroups = Object.keys(groups)
+    .filter((g) => !groupOrder.includes(g))
+    .map((g) => [g, groups[g]] as const);
+  const sortedGroups = [...knownGroups, ...otherGroups];
 
   // Build string values map for AI context
   const currentValues = useMemo(() => {
